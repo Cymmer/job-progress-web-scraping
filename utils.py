@@ -1,0 +1,294 @@
+import html
+import os
+import time
+
+from urllib.parse import unquote
+
+from selenium.webdriver.common.keys import Keys
+
+from constants import DOWNLOAD_DIRECTORY
+
+
+def open_new_tab(driver):
+    driver.find_element_by_tag_name("body").send_keys(Keys.COMMAND + "t")
+
+
+def close_tab(driver):
+    driver.find_element_by_tag_name("body").send_keys(Keys.COMMAND + "w")
+
+
+def download_file(driver, data):
+    download_retries = 0
+    is_download_successful = False
+
+    if not isinstance(data["file_link"], str):
+        return is_download_successful
+
+    while not is_download_successful and download_retries < 3:
+        has_downloaded_raw_file = False
+
+        # Download file
+        try:
+            driver.get(data["file_link"])
+        except:
+            break
+
+        # Check if file has been downloaded
+        while not has_downloaded_raw_file:
+            has_downloaded_raw_file = True
+            for i in os.listdir(DOWNLOAD_DIRECTORY):
+                if ".crdownload" in i and (
+                    os.path.isfile(os.path.join(DOWNLOAD_DIRECTORY, i))
+                    and data["source_file_name"] in i
+                ):
+                    has_downloaded_raw_file = False
+
+            if not has_downloaded_raw_file:
+                time.sleep(2)
+
+        # Check if file exists in output folder
+        time.sleep(2)
+        file_exists = False
+        for filepath in os.listdir(DOWNLOAD_DIRECTORY):
+            if (
+                data["source_file_name"] in filepath
+                or data["source_file_name"] == filepath
+            ):
+                file_exists = True
+                raw_path = filepath
+                break
+
+        time.sleep(3)
+        if file_exists:
+            try:
+                # Rename file to reposition to specific
+                # job folder
+                os.rename(
+                    os.path.join(DOWNLOAD_DIRECTORY, raw_path),
+                    os.path.join(
+                        DOWNLOAD_DIRECTORY,
+                        data["job_id"],
+                        data["folder"],
+                        data["destination_file_name"] + data["file_extension"],
+                    ),
+                )
+
+                # Do not continue if file still exists
+                file_exists = True
+                retries = 0
+                while file_exists and retries < 5:
+                    file_exists = False
+                    for filepath in os.listdir(DOWNLOAD_DIRECTORY):
+                        if raw_path == filepath:
+                            file_exists = True
+                            raw_path = filepath
+                            retries += 1
+                    if file_exists:
+                        print(
+                            "Still renaming %s"
+                            % data["source_file_name"]
+                        )
+                        time.sleep(3)
+                        is_download_successful = False
+                    else:
+                        is_download_successful = True
+
+            except FileExistsError:
+                # This error exists when there is a file with same destination name as specified in data.
+                # In this case, we use its raw name
+                print(
+                    "File %s already exists. Putting raw file name: %s to specific folder"
+                    % (data["source_file_name"], raw_path)
+                )
+                os.rename(
+                    os.path.join(DOWNLOAD_DIRECTORY, raw_path),
+                    os.path.join(
+                        DOWNLOAD_DIRECTORY, data["job_id"], data["folder"], raw_path
+                    ),
+                )
+
+                # Do not continue if file still exists
+                file_exists = True
+                retries = 0
+                while file_exists and retries < 5:
+                    file_exists = False
+                    for filepath in os.listdir(DOWNLOAD_DIRECTORY):
+                        if raw_path == filepath:
+                            file_exists = True
+                            raw_path = filepath
+                            retries += 1
+                    if file_exists:
+                        print("Still transferring %s to specific folder" % raw_path)
+                        is_download_successful = False
+                        time.sleep(3)
+                    else:
+                        is_download_successful = True
+            except FileNotFoundError:
+                is_download_successful = False
+            except Exception as e:
+                # This is for unknown failures
+                is_download_successful = False
+                print(str(e))
+        else:
+            is_download_successful = False
+            print("File does not exist: " + data["source_file_name"])
+
+        download_retries += 1
+
+    return is_download_successful
+
+
+def add_files_to_data(driver, job_id, folder_name, all_data, failed_data, files):
+    added_data = []
+    for file in files:
+        try:
+            div_id = file.get_attribute("id")
+            file_link = None
+
+            try:
+                file_link = driver.find_element_by_css_selector(
+                    "div[id='%s'] > div > div > a" % div_id
+                ).get_attribute("href")
+            except:
+                try:
+                    file_link = driver.find_element_by_css_selector(
+                        "div[id='%s'] > div > div > a > img" % div_id
+                    ).get_attribute("src")
+                except:
+                    try:
+                        file_link = driver.find_element_by_css_selector(
+                            "div[id='%s'] > div > div > div > a" % div_id
+                        ).get_attribute("href")
+                    except:
+                        pass
+
+            try:
+                filename, file_extension = os.path.splitext(file_link)
+            except:
+                filename = ""
+                file_extension = ""
+
+            try:
+                destination_file_name = unquote(
+                    html.unescape(
+                        driver.find_element_by_css_selector(
+                            "div[id='%s'] div.image-title > p" % div_id
+                        )
+                        .get_attribute("innerHTML")
+                        .strip()
+                    )
+                )
+            except:
+                destination_file_name = ""
+
+            try:
+                dest_filename, dest_fileext = os.path.splitext(destination_file_name)
+            except:
+                dest_filename = ""
+                dest_fileext = ""
+
+            if dest_fileext:
+                file_extension = ""
+
+            data = {
+                "job_id": job_id,
+                "folder": folder_name,
+                "file_link": file_link,
+                "file_extension": file_extension,
+                "source_file_name": unquote(
+                    html.unescape(file_link.split(".com/")[1].replace("%2F", "_"))
+                ),
+                "destination_file_name": destination_file_name,
+            }
+            all_data.append(data)
+            added_data.append(data)
+        except Exception as e:
+            try:
+                destination_file_name = unquote(
+                    html.unescape(
+                        driver.find_element_by_css_selector(
+                            "div[id='%s'] div.image-title > p" % div_id
+                        )
+                        .get_attribute("innerHTML")
+                        .strip()
+                    )
+                )
+            except:
+                destination_file_name = ""
+    
+            failed_data.append(
+                {
+                    "job_id": job_id,
+                    "folder": folder_name,
+                    "file_extension": "",
+                    "file_link": "",
+                    "source_file_name": "",
+                    "destination_file_name": destination_file_name,
+                }
+            )
+            print("error file", file, str(e))
+
+    return added_data
+
+
+def add_images_to_data(driver, job_id, folder_name, all_data, failed_data, images):
+    added_data = []
+    for image in images:
+        try:
+            file_name = unquote(
+                html.unescape(
+                    image.find_element_by_css_selector("li:nth-child(1)")
+                    .get_attribute("innerHTML")
+                    .strip()
+                )
+            )
+            file_link = image.find_element_by_css_selector(
+                "li:nth-child(8) > a"
+            ).get_attribute("href")
+
+            try:
+                name, ext = os.path.splitext(file_name)
+            except:
+                name = ""
+                ext = ""
+
+            if ext:
+                ext = ""
+
+            data = {
+                "job_id": job_id,
+                "folder": "PhotoDocuments",
+                "file_extension": ext,
+                "file_link": file_link,
+                "source_file_name": file_name,
+                "destination_file_name": file_name,
+            }
+            all_data.append(data)
+            added_data.append(data)
+        except:
+            pass
+
+    return added_data
+
+
+def click_job_number(driver):
+    has_clicked_job_number = False
+    max_retries = 10
+    retries = 0
+    while not has_clicked_job_number and retries < max_retries:
+        try:
+            wrapper = driver.find_element_by_class_name("job-number")
+            wrapper.click()
+            has_clicked_job_number = True
+        except:
+            retries += 1
+            print(
+                "Cannot find and click job number. Refinding job number (%d)" % retries
+            )
+            pass
+
+    if not has_clicked_job_number:
+        print(
+            "Conclusion: Cannot find job number after 10 tries. Continue to the next process."
+        )
+
