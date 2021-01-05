@@ -226,13 +226,16 @@ if not has_existing_data:
             work_order_path = os.path.join(job_directory_path, "WorkOrders")
             photos_path = os.path.join(job_directory_path, "PhotoDocuments")
 
-            os.mkdir(job_directory_path)
-            os.mkdir(measurement_path)
-            os.mkdir(estimation_path)
-            os.mkdir(proposals_path)
-            os.mkdir(materials_path)
-            os.mkdir(work_order_path)
-            os.mkdir(photos_path)
+            try:
+                os.mkdir(job_directory_path)
+                os.mkdir(measurement_path)
+                os.mkdir(estimation_path)
+                os.mkdir(proposals_path)
+                os.mkdir(materials_path)
+                os.mkdir(work_order_path)
+                os.mkdir(photos_path)
+            except:
+                pass
 
             # extract files from MEASUREMENTS
             driver.get(measurement_url)
@@ -454,8 +457,19 @@ if not has_existing_data:
                         break
 
                 try:
-                    images = driver.find_elements_by_css_selector(
-                        "ul.width-auto-job-photos"
+                    images = driver.execute_script(
+                        """
+                        var result = [];
+                        var imgs = document.querySelectorAll("ul.width-auto-job-photos");
+                        for (var i=0, max=imgs.length; i < max; i++) {
+                            innerResults = {
+                                name: imgs[i].querySelector("li:nth-child(1)").innerHTML,
+                                file_link: imgs[i].querySelector("li:nth-child(8) > a").getAttribute("href")
+                            };
+                            result.push(innerResults);
+                        }
+                        return result;
+                    """
                     )
                 except:
                     images = []

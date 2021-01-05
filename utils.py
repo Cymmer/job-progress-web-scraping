@@ -37,17 +37,14 @@ def download_file(driver, data):
         while not has_downloaded_raw_file:
             has_downloaded_raw_file = True
             for i in os.listdir(DOWNLOAD_DIRECTORY):
-                if ".crdownload" in i and (
-                    os.path.isfile(os.path.join(DOWNLOAD_DIRECTORY, i))
-                    and data["source_file_name"] in i
-                ):
+                if i.endswith(".crdownload"):
                     has_downloaded_raw_file = False
 
             if not has_downloaded_raw_file:
-                time.sleep(2)
+                time.sleep(1)
 
+        time.sleep(1)
         # Check if file exists in output folder
-        time.sleep(2)
         file_exists = False
         for filepath in os.listdir(DOWNLOAD_DIRECTORY):
             if (
@@ -58,7 +55,6 @@ def download_file(driver, data):
                 raw_path = filepath
                 break
 
-        time.sleep(3)
         if file_exists:
             try:
                 # Rename file to reposition to specific
@@ -84,11 +80,8 @@ def download_file(driver, data):
                             raw_path = filepath
                             retries += 1
                     if file_exists:
-                        print(
-                            "Still renaming %s"
-                            % data["source_file_name"]
-                        )
-                        time.sleep(3)
+                        print("Still renaming %s" % data["source_file_name"])
+                        time.sleep(2)
                         is_download_successful = False
                     else:
                         is_download_successful = True
@@ -120,7 +113,7 @@ def download_file(driver, data):
                     if file_exists:
                         print("Still transferring %s to specific folder" % raw_path)
                         is_download_successful = False
-                        time.sleep(3)
+                        time.sleep(2)
                     else:
                         is_download_successful = True
             except FileNotFoundError:
@@ -190,14 +183,19 @@ def add_files_to_data(driver, job_id, folder_name, all_data, failed_data, files)
             if dest_fileext:
                 file_extension = ""
 
+            try:
+                source_file_name = html.unescape(
+                    file_link.split(".com/")[1].replace("%2F", "_")
+                )
+            except:
+                source_file_name = ""
+
             data = {
                 "job_id": job_id,
                 "folder": folder_name,
                 "file_link": file_link,
                 "file_extension": file_extension,
-                "source_file_name": unquote(
-                    html.unescape(file_link.split(".com/")[1].replace("%2F", "_"))
-                ),
+                "source_file_name": source_file_name,
                 "destination_file_name": destination_file_name,
             }
             all_data.append(data)
@@ -215,7 +213,7 @@ def add_files_to_data(driver, job_id, folder_name, all_data, failed_data, files)
                 )
             except:
                 destination_file_name = ""
-    
+
             failed_data.append(
                 {
                     "job_id": job_id,
@@ -235,16 +233,15 @@ def add_images_to_data(driver, job_id, folder_name, all_data, failed_data, image
     added_data = []
     for image in images:
         try:
-            file_name = unquote(
-                html.unescape(
-                    image.find_element_by_css_selector("li:nth-child(1)")
-                    .get_attribute("innerHTML")
-                    .strip()
-                )
-            )
-            file_link = image.find_element_by_css_selector(
-                "li:nth-child(8) > a"
-            ).get_attribute("href")
+            try:
+                file_name = unquote(html.unescape(image["name"].strip()))
+            except:
+                file_name = ""
+
+            try:
+                file_link = image["file_link"]
+            except:
+                file_link = ""
 
             try:
                 name, ext = os.path.splitext(file_name)
@@ -291,4 +288,3 @@ def click_job_number(driver):
         print(
             "Conclusion: Cannot find job number after 10 tries. Continue to the next process."
         )
-
