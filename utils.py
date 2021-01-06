@@ -30,6 +30,7 @@ def download_file(driver, data):
         # Download file
         try:
             driver.get(data["file_link"])
+            time.sleep(1)
         except:
             break
 
@@ -93,12 +94,17 @@ def download_file(driver, data):
                     "File %s already exists. Putting raw file name: %s to specific folder"
                     % (data["source_file_name"], raw_path)
                 )
-                os.rename(
-                    os.path.join(DOWNLOAD_DIRECTORY, raw_path),
-                    os.path.join(
-                        DOWNLOAD_DIRECTORY, data["job_id"], data["folder"], raw_path
-                    ),
-                )
+
+                try:
+                    os.rename(
+                        os.path.join(DOWNLOAD_DIRECTORY, raw_path),
+                        os.path.join(
+                            DOWNLOAD_DIRECTORY, data["job_id"], data["folder"], raw_path
+                        ),
+                    )
+                except:
+                    is_download_successful = False
+                    break
 
                 # Do not continue if file still exists
                 file_exists = True
