@@ -140,7 +140,7 @@ if not has_existing_data:
                     "div.job-list-contianer > div:nth-child(2) > a"
                 )
                 load_more_button.click()
-                time.sleep(5)
+                time.sleep(3)
                 # driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
                 # time.sleep(3)
             except Exception as e:
@@ -441,7 +441,7 @@ if not has_existing_data:
                         with open("failed_data.json", "w") as outfile:
                             json.dump(failed_data, outfile)
 
-            if flags[5]:  
+            if flags[5]:
                 # extract files from PHOTOS & DOCUMENTS
                 driver.get(photos_url)
                 time.sleep(5)
