@@ -139,20 +139,30 @@ if not has_existing_data:
                 load_more_button = driver.find_element_by_css_selector(
                     "div.job-list-contianer > div:nth-child(2) > a"
                 )
-                load_more_button.click()
-                time.sleep(6)
+
+                try:
+                    if load_more_button.text.strip().lower() == "load more":
+                        load_more_button.click()
+                    else:
+                        print("Load more button not found. Attempting to find again.")
+                except:
+                    pass
+                time.sleep(3)
                 # driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
                 # time.sleep(3)
             except Exception as e:
                 # Do not exit if current job count is not yet >= to max job count
-                heading_job_count = driver.find_elements_by_class_name(
-                    "heading-job-count"
-                )[0]
-                job_count = (heading_job_count.text).split("/")
-                current_job_count = int(job_count[0][1:])
-                max_job_count = int(job_count[1][:-1])
+                try:
+                    heading_job_count = driver.find_elements_by_class_name(
+                        "heading-job-count"
+                    )[0]
+                    job_count = (heading_job_count.text).split("/")
+                    current_job_count = int(job_count[0][1:])
+                    max_job_count = int(job_count[1][:-1])
 
-                if current_job_count < max_job_count:
+                    if current_job_count < max_job_count:
+                        continue
+                except:
                     continue
 
                 print("Load more button not found anymore (no more items)")

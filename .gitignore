@@ -1,3 +1,4 @@
 env/
 output/
 failed_data.json
+__pycache__/
