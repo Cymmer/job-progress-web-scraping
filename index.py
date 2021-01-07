@@ -140,7 +140,7 @@ if not has_existing_data:
                     "div.job-list-contianer > div:nth-child(2) > a"
                 )
                 load_more_button.click()
-                time.sleep(3)
+                time.sleep(6)
                 # driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
                 # time.sleep(3)
             except Exception as e:
