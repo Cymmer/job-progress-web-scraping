@@ -14,9 +14,10 @@ from utils import (
     open_new_tab,
     close_tab,
     download_file,
-    add_files_to_data,
+    add_all_files_to_data,
     add_images_to_data,
     click_job_number,
+    get_all_files
 )
 
 #####################################
@@ -249,7 +250,7 @@ if not has_existing_data:
                 pass
 
             # Get flags to increase speed
-            time.sleep(5)
+            time.sleep(10)
             try:
                 menu_counts = driver.execute_script(
                     """
@@ -279,18 +280,11 @@ if not has_existing_data:
             if flags[0]:
                 # extract files from MEASUREMENTS
                 driver.get(measurement_url)
-                time.sleep(5)
+                time.sleep(10)
 
-                # click job number to close automatic dropdown
-                # click_job_number(driver)
+                files = get_all_files(driver)
 
-                try:
-                    files = driver.find_elements_by_css_selector(
-                        "div[id$='-context-menu-one']"
-                    )
-                except:
-                    files = []
-                added_data = add_files_to_data(
+                added_data = add_all_files_to_data(
                     driver, job_id, "Measurements", all_data, failed_data, files
                 )
                 for data in added_data:
@@ -314,18 +308,11 @@ if not has_existing_data:
             if flags[1]:
                 # extract files from ESTIMATING
                 driver.get(estimation_url)
-                time.sleep(5)
+                time.sleep(10)
 
-                # click job number to close automatic dropdown
-                # click_job_number(driver)
+                files = get_all_files(driver)
 
-                try:
-                    files = driver.find_elements_by_css_selector(
-                        "div[id$='-context-menu-one']"
-                    )
-                except:
-                    files = []
-                added_data = add_files_to_data(
+                added_data = add_all_files_to_data(
                     driver, job_id, "Estimating", all_data, failed_data, files
                 )
                 for data in added_data:
@@ -349,18 +336,11 @@ if not has_existing_data:
             if flags[2]:
                 # extract files from FORMS/PROPOSALS
                 driver.get(proposals_url)
-                time.sleep(5)
+                time.sleep(10)
 
-                # click job number to close automatic dropdown
-                # click_job_number(driver)
+                files = get_all_files(driver)
 
-                try:
-                    files = driver.find_elements_by_css_selector(
-                        "div[id$='-context-menu-one']"
-                    )
-                except:
-                    files = []
-                added_data = add_files_to_data(
+                added_data = add_all_files_to_data(
                     driver, job_id, "FormsProposals", all_data, failed_data, files
                 )
                 for data in added_data:
@@ -386,16 +366,9 @@ if not has_existing_data:
                 driver.get(materials_url)
                 time.sleep(5)
 
-                # click job number to close automatic dropdown
-                # click_job_number(driver)
+                files = get_all_files(driver)
 
-                try:
-                    files = driver.find_elements_by_css_selector(
-                        "div[id$='-context-menu-one']"
-                    )
-                except:
-                    files = []
-                added_data = add_files_to_data(
+                added_data = add_all_files_to_data(
                     driver, job_id, "Materials", all_data, failed_data, files
                 )
                 for data in added_data:
@@ -423,6 +396,7 @@ if not has_existing_data:
 
                 # click job number to close automatic dropdown
                 # click_job_number(driver)
+                files = get_all_files(driver)
 
                 try:
                     files = driver.find_elements_by_css_selector(
@@ -430,7 +404,7 @@ if not has_existing_data:
                     )
                 except:
                     files = []
-                added_data = add_files_to_data(
+                added_data = add_all_files_to_data(
                     driver, job_id, "WorkOrders", all_data, failed_data, files
                 )
                 for data in added_data:
@@ -586,6 +560,46 @@ if not has_existing_data:
 
 with open("failed_data.json", "w") as outfile:
     json.dump(failed_data, outfile)
+
+# Process failed_data before ending the program
+failed_data = []
+has_existing_data = False
+if os.path.exists("failed_data.json"):
+    is_data_empty = False
+
+    # Read failed_data.json if list is not empty
+    f = open("failed_data.json", "r")
+    content = f.read().strip()
+    try:
+        if len(content) <= 2:
+            is_data_empty = True
+    except:
+        is_data_empty = True
+    f.close()
+
+    if not is_data_empty:
+        has_existing_data = True
+
+        print("Processing failed data only...")
+        with open("failed_data.json") as json_file:
+            file_count = 1
+            for data in json.load(json_file):
+                if "retry" not in data:
+                    data["retry"] = 0
+
+                print(
+                    "Downloading failed file #%d of job %s"
+                    % (file_count, data["job_id"])
+                )
+                is_download_successful = download_file(driver, data)
+
+                if not is_download_successful:
+                    data["retry"] += 1
+                    failed_data.append(data)
+
+                file_count += 1
+    else:
+        print("Nothing to process. failed_data.json is empty.\n\n")
 
 print(">>>>>>>> WEB SCRAPING DONE <<<<<<<<")
 print("%d Failures, see failed_data.json" % len(failed_data))

@@ -22,7 +22,9 @@ def download_file(driver, data):
     is_download_successful = False
 
     if not isinstance(data["file_link"], str):
-        return is_download_successful
+        return True
+    elif data["file_link"] == "":
+        return True # this happens due to the `add` item
 
     while not is_download_successful and download_retries < 3:
         has_downloaded_raw_file = False
@@ -30,7 +32,7 @@ def download_file(driver, data):
         # Download file
         try:
             driver.get(data["file_link"])
-            time.sleep(1)
+            time.sleep(2)
         except:
             break
 
@@ -38,13 +40,13 @@ def download_file(driver, data):
         while not has_downloaded_raw_file:
             has_downloaded_raw_file = True
             for i in os.listdir(DOWNLOAD_DIRECTORY):
-                if i.endswith(".crdownload"):
+                if i.endswith(".crdownload") and data["source_file_name"] != i:
                     has_downloaded_raw_file = False
+                    break
 
             if not has_downloaded_raw_file:
                 time.sleep(1)
 
-        time.sleep(1)
         # Check if file exists in output folder
         file_exists = False
         for filepath in os.listdir(DOWNLOAD_DIRECTORY):
@@ -83,7 +85,6 @@ def download_file(driver, data):
                     if file_exists:
                         print("Still renaming %s" % data["source_file_name"])
                         time.sleep(2)
-                        is_download_successful = False
                     else:
                         is_download_successful = True
 
@@ -103,7 +104,6 @@ def download_file(driver, data):
                         ),
                     )
                 except:
-                    is_download_successful = False
                     break
 
                 # Do not continue if file still exists
@@ -118,16 +118,12 @@ def download_file(driver, data):
                             retries += 1
                     if file_exists:
                         print("Still transferring %s to specific folder" % raw_path)
-                        is_download_successful = False
                         time.sleep(2)
                     else:
                         is_download_successful = True
-            except FileNotFoundError:
-                is_download_successful = False
             except Exception as e:
                 # This is for unknown failures
                 is_download_successful = False
-                print(str(e))
         else:
             is_download_successful = False
             print("File does not exist: " + data["source_file_name"])
@@ -138,6 +134,9 @@ def download_file(driver, data):
 
 
 def add_files_to_data(driver, job_id, folder_name, all_data, failed_data, files):
+    """
+    This method is deprecated
+    """
     added_data = []
     for file in files:
         try:
@@ -274,6 +273,59 @@ def add_images_to_data(driver, job_id, folder_name, all_data, failed_data, image
     return added_data
 
 
+def add_all_files_to_data(driver, job_id, folder_name, all_data, failed_data, files):
+    added_data = []
+    for file in files:
+        try:
+            try:
+                file_name = unquote(html.unescape(file["name"].strip()))
+            except:
+                file_name = ""
+
+            try:
+                file_link = file["file_link"]
+            except:
+                file_link = ""
+
+            try:
+                name, ext = os.path.splitext(file_name)
+            except:
+                name = ""
+                ext = ""
+
+            try:
+                filename, file_extension = os.path.splitext(file_link)
+            except:
+                filename = ""
+                file_extension = ""
+
+            if ext:
+                file_extension = ""
+
+            try:
+                source_file_name = html.unescape(
+                    file_link.split(".com/")[1].replace("%2F", "_")
+                )
+            except:
+                source_file_name = ""
+
+
+            data = {
+                "job_id": job_id,
+                "folder": folder_name,
+                "file_extension": file_extension,
+                "file_link": file_link,
+                "source_file_name": source_file_name,
+                "destination_file_name": file_name,
+            }
+            all_data.append(data)
+            added_data.append(data)
+        except:
+            pass
+
+    return added_data
+
+
 def click_job_number(driver):
     has_clicked_job_number = False
     max_retries = 10
@@ -294,3 +346,52 @@ def click_job_number(driver):
         print(
             "Conclusion: Cannot find job number after 10 tries. Continue to the next process."
         )
+
+
+def get_all_files(driver):
+    try:
+        files = driver.execute_script(
+            """
+            files = document.querySelectorAll("div.job-estimate-col");
+            var result = [];
+            for (var i=0, max=files.length; i < max; i++) {
+                var name;
+                var file_link;
+                try {
+                    name = files[i].querySelector("div.image-title > p").innerHTML
+                } catch(err) {
+                    name = ""
+                }
+
+                try {
+                    file_link = files[i].querySelector("ul.dropdown-menu > li:nth-child(2) > a").getAttribute("href")
+                } catch(err) {
+                    try {
+                        file_link = files[i].querySelector("div > div > div > a").getAttribute("href")
+                    } catch(err) {
+                        try {
+                            file_link = files[i].querySelector("div > div > div > div > a").getAttribute("href")
+                        } catch(err) {
+                            try {
+                                file_link = file_link = files[i].querySelector("div > div > a").getAttribute("href")
+                            } catch(err) {
+                                file_link = ""
+                            }
+                        }
+                    }
+                }
+
+                innerResults = {
+                    name: name,
+                    file_link: file_link
+                };
+                result.push(innerResults)
+            }
+            return result;
+        """
+        )
+    except Exception as e:
+        print(str(e))
+        files = []
+    print(files)
+    return files
