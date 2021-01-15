@@ -393,5 +393,5 @@ def get_all_files(driver):
     except Exception as e:
         print(str(e))
         files = []
-    print(files)
+
     return files
