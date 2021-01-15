@@ -1,4 +1,5 @@
 import os
+import platform
 
 
 USERNAME = "mindyt@ridgevalleyexteriors.com"
@@ -18,6 +19,12 @@ if os.name == "nt":
     )
 elif os.name == "posix":
     CHROME_DRIVER = "%s%sdrivers%schromedriver" % (
+        os.path.dirname(os.path.realpath(__file__)),
+        os.sep,
+        os.sep,
+    )
+elif platform.system() == "Linux":
+    CHROME_DRIVER = "%s%sdrivers%schromedriverlinux" % (
         os.path.dirname(os.path.realpath(__file__)),
         os.sep,
         os.sep,
