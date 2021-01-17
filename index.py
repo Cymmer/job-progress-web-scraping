@@ -148,7 +148,7 @@ if not has_existing_data:
                         print("Load more button not found. Attempting to find again.")
                 except:
                     pass
-                time.sleep(40)
+                time.sleep(60)
                 # driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
                 # time.sleep(3)
             except Exception as e:
