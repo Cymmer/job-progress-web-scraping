@@ -280,7 +280,7 @@ if not has_existing_data:
             if flags[0]:
                 # extract files from MEASUREMENTS
                 driver.get(measurement_url)
-                time.sleep(10)
+                time.sleep(15)
 
                 files = get_all_files(driver)
 
@@ -308,7 +308,7 @@ if not has_existing_data:
             if flags[1]:
                 # extract files from ESTIMATING
                 driver.get(estimation_url)
-                time.sleep(10)
+                time.sleep(15)
 
                 files = get_all_files(driver)
 
@@ -336,7 +336,7 @@ if not has_existing_data:
             if flags[2]:
                 # extract files from FORMS/PROPOSALS
                 driver.get(proposals_url)
-                time.sleep(10)
+                time.sleep(15)
 
                 files = get_all_files(driver)
 
@@ -364,7 +364,7 @@ if not has_existing_data:
             if flags[3]:
                 # extract files from MATERIALS
                 driver.get(materials_url)
-                time.sleep(5)
+                time.sleep(15)
 
                 files = get_all_files(driver)
 
@@ -392,7 +392,7 @@ if not has_existing_data:
             if flags[4]:
                 # extract files from WORK ORDERS
                 driver.get(work_order_url)
-                time.sleep(5)
+                time.sleep(15)
 
                 # click job number to close automatic dropdown
                 # click_job_number(driver)
@@ -422,7 +422,7 @@ if not has_existing_data:
             if flags[5]:
                 # extract files from PHOTOS & DOCUMENTS
                 driver.get(photos_url)
-                time.sleep(5)
+                time.sleep(15)
 
                 # click job number to close automatic dropdown
                 # click_job_number(driver)
