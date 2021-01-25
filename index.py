@@ -115,7 +115,7 @@ if not has_existing_data:
         print("Navigating to the %s page..." % job)
         # Navigate to job
         driver.get(job)
-        time.sleep(5)
+        time.sleep(10)
 
         # "https://www.jobprogress.com/app/#/jobs?only_archived=1" # Archived Jobs Only
 
@@ -398,12 +398,6 @@ if not has_existing_data:
                 # click_job_number(driver)
                 files = get_all_files(driver)
 
-                try:
-                    files = driver.find_elements_by_css_selector(
-                        "div[id$='-context-menu-one']"
-                    )
-                except:
-                    files = []
                 added_data = add_all_files_to_data(
                     driver, job_id, "WorkOrders", all_data, failed_data, files
                 )
@@ -481,9 +475,24 @@ if not has_existing_data:
                             var result = [];
                             var imgs = document.querySelectorAll("ul.width-auto-job-photos");
                             for (var i=0, max=imgs.length; i < max; i++) {
+                                var fl = imgs[i].querySelector("li:nth-child(8) > a").getAttribute("href");
+                                if(!fl) {
+                                    for(var x=0, max2=imgs.length; x < max2; x++) {
+                                        var fl = imgs[i].querySelector("li:nth-child("+ (x+1) + ") > a").getAttribute("href");
+                                        if(!fl || fl == "javascript:void(0)") {
+                                            continue;
+                                        } else {
+                                            break;
+                                        }
+                                    }
+                                }
+
+                                if(!fl) {
+                                    fl = ""
+                                }
                                 innerResults = {
                                     name: imgs[i].querySelector("li:nth-child(1)").innerHTML,
-                                    file_link: imgs[i].querySelector("li:nth-child(8) > a").getAttribute("href")
+                                    file_link: fl
                                 };
                                 if(result.indexOf(innerResults) === -1) {
                                     result.push(innerResults);

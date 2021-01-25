@@ -2,6 +2,7 @@ import html
 import os
 import time
 
+from difflib import SequenceMatcher
 from urllib.parse import unquote
 
 from selenium.webdriver.common.keys import Keys
@@ -18,6 +19,7 @@ def close_tab(driver):
 
 
 def download_file(driver, data):
+    print(data)
     download_retries = 0
     is_download_successful = False
 
@@ -50,13 +52,25 @@ def download_file(driver, data):
         # Check if file exists in output folder
         file_exists = False
         for filepath in os.listdir(DOWNLOAD_DIRECTORY):
-            if (
-                data["source_file_name"] in filepath
-                or data["source_file_name"] == filepath
-            ):
+            try:
+                filename, file_extension = os.path.splitext(filepath)
+            except:
+                filename = ""
+                file_extension = ""
+
+            if file_extension:
                 file_exists = True
                 raw_path = filepath
                 break
+            # if (
+            #     data["source_file_name"].lower() in filepath.lower()
+            #     or data["source_file_name"].lower() == filepath.lower()
+            #     or data["destination_file_name"].lower() in filepath.lower()
+            #     or SequenceMatcher(None, data["source_file_name"], filepath).ratio() >= 0.3
+            # ):
+            #     file_exists = True
+            #     raw_path = filepath
+            #     break
 
         if file_exists:
             try:
@@ -121,6 +135,7 @@ def download_file(driver, data):
                         time.sleep(2)
                     else:
                         is_download_successful = True
+                time.sleep(3)
             except Exception as e:
                 # This is for unknown failures
                 is_download_successful = False
@@ -131,107 +146,6 @@ def download_file(driver, data):
         download_retries += 1
 
     return is_download_successful
-
-
-def add_files_to_data(driver, job_id, folder_name, all_data, failed_data, files):
-    """
-    This method is deprecated
-    """
-    added_data = []
-    for file in files:
-        try:
-            div_id = file.get_attribute("id")
-            file_link = None
-
-            try:
-                file_link = driver.find_element_by_css_selector(
-                    "div[id='%s'] > div > div > a" % div_id
-                ).get_attribute("href")
-            except:
-                try:
-                    file_link = driver.find_element_by_css_selector(
-                        "div[id='%s'] > div > div > a > img" % div_id
-                    ).get_attribute("src")
-                except:
-                    try:
-                        file_link = driver.find_element_by_css_selector(
-                            "div[id='%s'] > div > div > div > a" % div_id
-                        ).get_attribute("href")
-                    except:
-                        pass
-
-            try:
-                filename, file_extension = os.path.splitext(file_link)
-            except:
-                filename = ""
-                file_extension = ""
-
-            try:
-                destination_file_name = unquote(
-                    html.unescape(
-                        driver.find_element_by_css_selector(
-                            "div[id='%s'] div.image-title > p" % div_id
-                        )
-                        .get_attribute("innerHTML")
-                        .strip()
-                    )
-                )
-            except:
-                destination_file_name = ""
-
-            try:
-                dest_filename, dest_fileext = os.path.splitext(destination_file_name)
-            except:
-                dest_filename = ""
-                dest_fileext = ""
-
-            if dest_fileext:
-                file_extension = ""
-
-            try:
-                source_file_name = html.unescape(
-                    file_link.split(".com/")[1].replace("%2F", "_")
-                )
-            except:
-                source_file_name = ""
-
-            data = {
-                "job_id": job_id,
-                "folder": folder_name,
-                "file_link": file_link,
-                "file_extension": file_extension,
-                "source_file_name": source_file_name,
-                "destination_file_name": destination_file_name,
-            }
-            all_data.append(data)
-            added_data.append(data)
-        except Exception as e:
-            try:
-                destination_file_name = unquote(
-                    html.unescape(
-                        driver.find_element_by_css_selector(
-                            "div[id='%s'] div.image-title > p" % div_id
-                        )
-                        .get_attribute("innerHTML")
-                        .strip()
-                    )
-                )
-            except:
-                destination_file_name = ""
-
-            failed_data.append(
-                {
-                    "job_id": job_id,
-                    "folder": folder_name,
-                    "file_extension": "",
-                    "file_link": "",
-                    "source_file_name": "",
-                    "destination_file_name": destination_file_name,
-                }
-            )
-            print("error file", file, str(e))
-
-    return added_data
 
 
 def add_images_to_data(driver, job_id, folder_name, all_data, failed_data, images):
@@ -347,6 +261,106 @@ def click_job_number(driver):
             "Conclusion: Cannot find job number after 10 tries. Continue to the next process."
         )
 
+def add_files_to_data(driver, job_id, folder_name, all_data, failed_data, files):
+    """
+    This method is deprecated
+    """
+    added_data = []
+    for file in files:
+        try:
+            div_id = file.get_attribute("id")
+            file_link = None
+
+            try:
+                file_link = driver.find_element_by_css_selector(
+                    "div[id='%s'] > div > div > a" % div_id
+                ).get_attribute("href")
+            except:
+                try:
+                    file_link = driver.find_element_by_css_selector(
+                        "div[id='%s'] > div > div > a > img" % div_id
+                    ).get_attribute("src")
+                except:
+                    try:
+                        file_link = driver.find_element_by_css_selector(
+                            "div[id='%s'] > div > div > div > a" % div_id
+                        ).get_attribute("href")
+                    except:
+                        pass
+
+            try:
+                filename, file_extension = os.path.splitext(file_link)
+            except:
+                filename = ""
+                file_extension = ""
+
+            try:
+                destination_file_name = unquote(
+                    html.unescape(
+                        driver.find_element_by_css_selector(
+                            "div[id='%s'] div.image-title > p" % div_id
+                        )
+                        .get_attribute("innerHTML")
+                        .strip()
+                    )
+                )
+            except:
+                destination_file_name = ""
+
+            try:
+                dest_filename, dest_fileext = os.path.splitext(destination_file_name)
+            except:
+                dest_filename = ""
+                dest_fileext = ""
+
+            if dest_fileext:
+                file_extension = ""
+
+            try:
+                source_file_name = html.unescape(
+                    file_link.split(".com/")[1].replace("%2F", "_")
+                )
+            except:
+                source_file_name = ""
+
+            data = {
+                "job_id": job_id,
+                "folder": folder_name,
+                "file_link": file_link,
+                "file_extension": file_extension,
+                "source_file_name": source_file_name,
+                "destination_file_name": destination_file_name,
+            }
+            all_data.append(data)
+            added_data.append(data)
+        except Exception as e:
+            try:
+                destination_file_name = unquote(
+                    html.unescape(
+                        driver.find_element_by_css_selector(
+                            "div[id='%s'] div.image-title > p" % div_id
+                        )
+                        .get_attribute("innerHTML")
+                        .strip()
+                    )
+                )
+            except:
+                destination_file_name = ""
+
+            failed_data.append(
+                {
+                    "job_id": job_id,
+                    "folder": folder_name,
+                    "file_extension": "",
+                    "file_link": "",
+                    "source_file_name": "",
+                    "destination_file_name": destination_file_name,
+                }
+            )
+            print("error file", file, str(e))
+
+    return added_data
+
 
 def get_all_files(driver):
     try:
@@ -390,6 +404,7 @@ def get_all_files(driver):
             return result;
         """
         )
+
     except Exception as e:
         print(str(e))
         files = []
