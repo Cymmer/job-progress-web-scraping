@@ -19,7 +19,6 @@ def close_tab(driver):
 
 
 def download_file(driver, data):
-    print(data)
     download_retries = 0
     is_download_successful = False
 
