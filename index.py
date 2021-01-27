@@ -162,6 +162,7 @@ if not has_existing_data:
                     max_job_count = int(job_count[1][:-1])
 
                     if current_job_count < max_job_count:
+                        time.sleep(60)
                         continue
                 except:
                     continue
