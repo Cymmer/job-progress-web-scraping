@@ -214,8 +214,10 @@ if not has_existing_data:
             # run time error that causes the program to terminate
             # with open("remaining_jobs.json", "w") as outfile:
             #     json.dump(temp_job_links, outfile)
-
-            driver.get(link)
+            try:
+                driver.get(link)
+            except:
+                continue
 
             job_id = link.split("/")[-2]
 
