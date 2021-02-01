@@ -252,300 +252,266 @@ if not has_existing_data:
             except:
                 pass
 
-            # Get flags to increase speed
-            time.sleep(10)
+            # extract files from MEASUREMENTS
+            driver.get(measurement_url)
+            time.sleep(15)
+
+            files = get_all_files(driver)
+
+            added_data = add_all_files_to_data(
+                driver, job_id, "Measurements", all_data, failed_data, files
+            )
+            for data in added_data:
+                print(
+                    "Downloading Measurements file %s of job %s (%d/%d)"
+                    % (
+                        data["source_file_name"],
+                        data["job_id"],
+                        i + 1,
+                        len(sliced_job_links),
+                    )
+                )
+
+                is_download_successful = download_file(driver, data)
+
+                if not is_download_successful:
+                    failed_data.append(data)
+                    with open("failed_data.json", "w") as outfile:
+                        json.dump(failed_data, outfile)
+
+            # extract files from ESTIMATING
+            driver.get(estimation_url)
+            time.sleep(15)
+
+            files = get_all_files(driver)
+
+            added_data = add_all_files_to_data(
+                driver, job_id, "Estimating", all_data, failed_data, files
+            )
+            for data in added_data:
+                print(
+                    "Downloading Estimating file %s of job %s (%d/%d)"
+                    % (
+                        data["source_file_name"],
+                        data["job_id"],
+                        i + 1,
+                        len(sliced_job_links),
+                    )
+                )
+
+                is_download_successful = download_file(driver, data)
+
+                if not is_download_successful:
+                    failed_data.append(data)
+                    with open("failed_data.json", "w") as outfile:
+                        json.dump(failed_data, outfile)
+
+        # extract files from FORMS/PROPOSALS
+        driver.get(proposals_url)
+        time.sleep(15)
+
+        files = get_all_files(driver)
+
+        added_data = add_all_files_to_data(
+            driver, job_id, "FormsProposals", all_data, failed_data, files
+        )
+        for data in added_data:
+            print(
+                "Downloading FormsProposals file %s of job %s (%d/%d)"
+                % (
+                    data["source_file_name"],
+                    data["job_id"],
+                    i + 1,
+                    len(sliced_job_links),
+                )
+            )
+
+            is_download_successful = download_file(driver, data)
+
+            if not is_download_successful:
+                failed_data.append(data)
+                with open("failed_data.json", "w") as outfile:
+                    json.dump(failed_data, outfile)
+
+        # extract files from MATERIALS
+        driver.get(materials_url)
+        time.sleep(15)
+
+        files = get_all_files(driver)
+
+        added_data = add_all_files_to_data(
+            driver, job_id, "Materials", all_data, failed_data, files
+        )
+        for data in added_data:
+            print(
+                "Downloading Materials file %s of job %s (%d/%d)"
+                % (
+                    data["source_file_name"],
+                    data["job_id"],
+                    i + 1,
+                    len(sliced_job_links),
+                )
+            )
+
+            is_download_successful = download_file(driver, data)
+
+            if not is_download_successful:
+                failed_data.append(data)
+                with open("failed_data.json", "w") as outfile:
+                    json.dump(failed_data, outfile)
+
+        # extract files from WORK ORDERS
+        driver.get(work_order_url)
+        time.sleep(15)
+
+        # click job number to close automatic dropdown
+        # click_job_number(driver)
+        files = get_all_files(driver)
+
+        added_data = add_all_files_to_data(
+            driver, job_id, "WorkOrders", all_data, failed_data, files
+        )
+        for data in added_data:
+            print(
+                "Downloading WorkOrders file %s of job %s (%d/%d)"
+                % (
+                    data["source_file_name"],
+                    data["job_id"],
+                    i + 1,
+                    len(sliced_job_links),
+                )
+            )
+
+            is_download_successful = download_file(driver, data)
+
+            if not is_download_successful:
+                failed_data.append(data)
+                with open("failed_data.json", "w") as outfile:
+                    json.dump(failed_data, outfile)
+
+            # extract files from PHOTOS & DOCUMENTS
+            driver.get(photos_url)
+            time.sleep(15)
+
+            # click job number to close automatic dropdown
+            # click_job_number(driver)
+
+            # get all the folders
             try:
-                menu_counts = driver.execute_script(
-                    """
-                    var counts = [];
-                    var sidebar = document.querySelector("ul.sidebar-list");
-                    for(var i = 3; i <= 8; i++) {
-                        li = sidebar.querySelector(`li:nth-child(${i})`);
-                        menu_count = li.querySelector("span.menu-count").innerHTML;
-                        counts.push(menu_count);
-                    }
-                    return counts;
-                """
-                )
+                all_folders = driver.find_elements_by_class_name("folder-directory-str")
             except:
-                menu_counts = []
+                all_folders = []
 
-            flags = [True, True, True, True, True, True]
-            for j, menu_count in enumerate(menu_counts):
+            folder_index = 0
+            while folder_index != len(all_folders):
+                # Check if count of folder is greater than 0
                 try:
-                    menu_count = unquote(html.unescape(menu_count.strip()))
+                    folder_count_element = all_folders[
+                        folder_index
+                    ].find_elements_by_class_name("child-count")
 
-                    if menu_count == "0":
-                        flags[j] = False
+                    count_of_folder_contents = folder_count_element[0].text
+                    if count_of_folder_contents == "0":
+                        folder_index += 1
+                        continue
                 except:
-                    continue
+                    pass
 
-            if flags[0]:
-                # extract files from MEASUREMENTS
-                driver.get(measurement_url)
-                time.sleep(15)
-
-                files = get_all_files(driver)
-
-                added_data = add_all_files_to_data(
-                    driver, job_id, "Measurements", all_data, failed_data, files
-                )
-                for data in added_data:
-                    print(
-                        "Downloading Measurements file %s of job %s (%d/%d)"
-                        % (
-                            data["source_file_name"],
-                            data["job_id"],
-                            i + 1,
-                            len(sliced_job_links),
-                        )
-                    )
-
-                    is_download_successful = download_file(driver, data)
-
-                    if not is_download_successful:
-                        failed_data.append(data)
-                        with open("failed_data.json", "w") as outfile:
-                            json.dump(failed_data, outfile)
-
-            if flags[1]:
-                # extract files from ESTIMATING
-                driver.get(estimation_url)
-                time.sleep(15)
-
-                files = get_all_files(driver)
-
-                added_data = add_all_files_to_data(
-                    driver, job_id, "Estimating", all_data, failed_data, files
-                )
-                for data in added_data:
-                    print(
-                        "Downloading Estimating file %s of job %s (%d/%d)"
-                        % (
-                            data["source_file_name"],
-                            data["job_id"],
-                            i + 1,
-                            len(sliced_job_links),
-                        )
-                    )
-
-                    is_download_successful = download_file(driver, data)
-
-                    if not is_download_successful:
-                        failed_data.append(data)
-                        with open("failed_data.json", "w") as outfile:
-                            json.dump(failed_data, outfile)
-
-            if flags[2]:
-                # extract files from FORMS/PROPOSALS
-                driver.get(proposals_url)
-                time.sleep(15)
-
-                files = get_all_files(driver)
-
-                added_data = add_all_files_to_data(
-                    driver, job_id, "FormsProposals", all_data, failed_data, files
-                )
-                for data in added_data:
-                    print(
-                        "Downloading FormsProposals file %s of job %s (%d/%d)"
-                        % (
-                            data["source_file_name"],
-                            data["job_id"],
-                            i + 1,
-                            len(sliced_job_links),
-                        )
-                    )
-
-                    is_download_successful = download_file(driver, data)
-
-                    if not is_download_successful:
-                        failed_data.append(data)
-                        with open("failed_data.json", "w") as outfile:
-                            json.dump(failed_data, outfile)
-
-            if flags[3]:
-                # extract files from MATERIALS
-                driver.get(materials_url)
-                time.sleep(15)
-
-                files = get_all_files(driver)
-
-                added_data = add_all_files_to_data(
-                    driver, job_id, "Materials", all_data, failed_data, files
-                )
-                for data in added_data:
-                    print(
-                        "Downloading Materials file %s of job %s (%d/%d)"
-                        % (
-                            data["source_file_name"],
-                            data["job_id"],
-                            i + 1,
-                            len(sliced_job_links),
-                        )
-                    )
-
-                    is_download_successful = download_file(driver, data)
-
-                    if not is_download_successful:
-                        failed_data.append(data)
-                        with open("failed_data.json", "w") as outfile:
-                            json.dump(failed_data, outfile)
-
-            if flags[4]:
-                # extract files from WORK ORDERS
-                driver.get(work_order_url)
-                time.sleep(15)
-
-                # click job number to close automatic dropdown
-                # click_job_number(driver)
-                files = get_all_files(driver)
-
-                added_data = add_all_files_to_data(
-                    driver, job_id, "WorkOrders", all_data, failed_data, files
-                )
-                for data in added_data:
-                    print(
-                        "Downloading WorkOrders file %s of job %s (%d/%d)"
-                        % (
-                            data["source_file_name"],
-                            data["job_id"],
-                            i + 1,
-                            len(sliced_job_links),
-                        )
-                    )
-
-                    is_download_successful = download_file(driver, data)
-
-                    if not is_download_successful:
-                        failed_data.append(data)
-                        with open("failed_data.json", "w") as outfile:
-                            json.dump(failed_data, outfile)
-
-            if flags[5]:
-                # extract files from PHOTOS & DOCUMENTS
-                driver.get(photos_url)
-                time.sleep(15)
-
-                # click job number to close automatic dropdown
-                # click_job_number(driver)
-
-                # get all the folders
                 try:
-                    all_folders = driver.find_elements_by_class_name("folder-directory-str")
+                    folder = all_folders[folder_index]
+                    folder.click()
+                    time.sleep(5)
                 except:
-                    all_folders = []
+                    pass
 
-                folder_index = 0
-                while folder_index != len(all_folders):
-                    # Check if count of folder is greater than 0
+                while True:
+                    # continuously click the Load More button
                     try:
-                        folder_count_element = all_folders[
-                            folder_index
-                        ].find_elements_by_class_name("child-count")
-
-                        count_of_folder_contents = folder_count_element[0].text
-                        if count_of_folder_contents == "0":
-                            folder_index += 1
-                            continue
-                    except:
-                        pass
-
-                    try:
-                        folder = all_folders[folder_index]
-                        folder.click()
+                        load_more_button = driver.find_element_by_css_selector(
+                            "div.text-center > a.btn-primary"
+                        )
+                        load_more_button.click()
                         time.sleep(5)
+                        driver.execute_script(
+                            "window.scrollTo(0, document.body.scrollHeight);"
+                        )
                     except:
-                        pass
+                        break
 
-                    while True:
-                        # continuously click the Load More button
-                        try:
-                            load_more_button = driver.find_element_by_css_selector(
-                                "div.text-center > a.btn-primary"
-                            )
-                            load_more_button.click()
-                            time.sleep(5)
-                            driver.execute_script(
-                                "window.scrollTo(0, document.body.scrollHeight);"
-                            )
-                        except:
-                            break
-
-                    try:
-                        images = driver.execute_script(
-                            """
-                            var result = [];
-                            var imgs = document.querySelectorAll("ul.width-auto-job-photos");
-                            for (var i=0, max=imgs.length; i < max; i++) {
-                                var fl = imgs[i].querySelector("li:nth-child(8) > a").getAttribute("href");
-                                if(!fl) {
-                                    for(var x=0, max2=imgs.length; x < max2; x++) {
-                                        var fl = imgs[i].querySelector("li:nth-child("+ (x+1) + ") > a").getAttribute("href");
-                                        if(!fl || fl == "javascript:void(0)") {
-                                            continue;
-                                        } else {
-                                            break;
-                                        }
+                try:
+                    images = driver.execute_script(
+                        """
+                        var result = [];
+                        var imgs = document.querySelectorAll("ul.width-auto-job-photos");
+                        for (var i=0, max=imgs.length; i < max; i++) {
+                            var fl = imgs[i].querySelector("li:nth-child(8) > a").getAttribute("href");
+                            if(!fl) {
+                                for(var x=0, max2=imgs.length; x < max2; x++) {
+                                    var fl = imgs[i].querySelector("li:nth-child("+ (x+1) + ") > a").getAttribute("href");
+                                    if(!fl || fl == "javascript:void(0)") {
+                                        continue;
+                                    } else {
+                                        break;
                                     }
                                 }
-
-                                if(!fl) {
-                                    fl = ""
-                                }
-                                innerResults = {
-                                    name: imgs[i].querySelector("li:nth-child(1)").innerHTML,
-                                    file_link: fl
-                                };
-                                if(result.indexOf(innerResults) === -1) {
-                                    result.push(innerResults);
-                                }
                             }
-                            return result;
-                        """
-                        )
-                    except:
-                        images = []
 
-                    added_data = add_images_to_data(
-                        driver, job_id, "PhotoDocuments", all_data, failed_data, images
+                            if(!fl) {
+                                fl = ""
+                            }
+                            innerResults = {
+                                name: imgs[i].querySelector("li:nth-child(1)").innerHTML,
+                                file_link: fl
+                            };
+                            if(result.indexOf(innerResults) === -1) {
+                                result.push(innerResults);
+                            }
+                        }
+                        return result;
+                    """
                     )
-                    for data in added_data:
-                        print(
-                            "Downloading PhotoDocuments file %s of job %s (%d/%d)"
-                            % (
-                                data["source_file_name"],
-                                data["job_id"],
-                                i + 1,
-                                len(sliced_job_links),
-                            )
+                except:
+                    images = []
+
+                added_data = add_images_to_data(
+                    driver, job_id, "PhotoDocuments", all_data, failed_data, images
+                )
+                for data in added_data:
+                    print(
+                        "Downloading PhotoDocuments file %s of job %s (%d/%d)"
+                        % (
+                            data["source_file_name"],
+                            data["job_id"],
+                            i + 1,
+                            len(sliced_job_links),
                         )
+                    )
 
-                        is_download_successful = download_file(driver, data)
+                    is_download_successful = download_file(driver, data)
 
-                        if not is_download_successful:
-                            failed_data.append(data)
-                            with open("failed_data.json", "w") as outfile:
-                                json.dump(failed_data, outfile)
+                    if not is_download_successful:
+                        failed_data.append(data)
+                        with open("failed_data.json", "w") as outfile:
+                            json.dump(failed_data, outfile)
 
-                    # click the back button in the breadcrumbs
+                # click the back button in the breadcrumbs
+                try:
+                    back_button = driver.find_element_by_css_selector(
+                        "ul.jp-breadcrumbs > span > li"
+                    )
+                    back_button.click()
+                    time.sleep(5)
+                except:
                     try:
-                        back_button = driver.find_element_by_css_selector(
-                            "ul.jp-breadcrumbs > span > li"
+                        load_more_button = driver.find_element_by_css_selector(
+                            "a.page-back-btn"
                         )
-                        back_button.click()
+                        load_more_button.click()
                         time.sleep(5)
                     except:
-                        try:
-                            load_more_button = driver.find_element_by_css_selector(
-                                "a.page-back-btn"
-                            )
-                            load_more_button.click()
-                            time.sleep(5)
-                        except:
-                            pass
+                        pass
 
-                    folder_index += 1
+                folder_index += 1
 
             # Clean output folder by deleting all unrenamed files
             # since some unrenamed files are duplicates and will
